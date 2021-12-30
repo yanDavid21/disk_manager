@@ -1,0 +1,16 @@
+{
+  "name": "disk_manager",
+  "version": "1.0.0",
+  "description": "Visualize and manage your disk space.",
+  "main": "index.js",
+  "type": "commonjs",
+  "scripts": {
+    "compile": "tsc "
+  },
+  "author": "David Yan",
+  "license": "ISC",
+  "dependencies": {
+    "command-line-args": "^5.2.0",
+    "command-line-usage": "^6.1.1"
+  }
+}
