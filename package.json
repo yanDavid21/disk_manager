@@ -10,6 +10,7 @@
   "author": "David Yan",
   "license": "ISC",
   "dependencies": {
+    "@types/node": "^17.0.5",
     "command-line-args": "^5.2.0",
     "command-line-usage": "^6.1.1"
   }

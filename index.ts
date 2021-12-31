@@ -1,8 +1,11 @@
 "use strict";
+
+import { Stats } from "fs";
+
+const os = require("os");
 const path = require("path");
 const commandLineUsage = require("command-line-usage");
 const commandLineArgs = require("command-line-args");
-const os = require("os");
 const { readdir, stat } = require("fs/promises");
 const { existsSync } = require("fs");
 
@@ -22,89 +25,18 @@ const processBigInt = (bigint: bigint): string => {
   }
 };
 
-const statOfDirectory = async (
-  directoryPath: string,
-  depth: number,
-  log: boolean,
-  count: boolean
-) => {
-  try {
-    if (log && depth < 3) {
-      console.log(`Measuring ${directoryPath}...`);
-    }
-    const directoryStat = await stat(directoryPath, { bigint: true });
-    const birthTime = directoryStat.birthtimeMs;
-    const lastModifiedTime = directoryStat.mtimeMs;
-    const filenames = await readdir(directoryPath);
+interface DirectoryStat {
+  size: bigint;
+  numFiles: number;
+  numDirs: number;
+  birthTime?: number;
+  lastModifiedTime?: number;
+}
 
-    const listOfDirEnts = await Promise.all(
-      filenames.map(async (filename) => {
-        const fileStat = await stat(path.join(directoryPath, filename), {
-          bigint: true,
-        });
-        return { filename, fileStat };
-      })
-    );
-
-    const listOfFiles = listOfDirEnts.filter(({ fileStat }) => {
-      return fileStat.isFile();
-    });
-
-    const listOfFileStats = listOfFiles.map(({ fileStat }) => {
-      return fileStat;
-    });
-
-    const listOfDirectories = listOfDirEnts.filter(({ fileStat }) => {
-      return fileStat.isDirectory();
-    });
-
-    const listOfDirectoryStats = await Promise.all(
-      listOfDirectories.map(({ filename, fileStat }) => {
-        return statOfDirectory(
-          path.join(directoryPath, filename),
-          depth + 1,
-          log,
-          count
-        );
-      })
-    );
-
-    let directorySize = BigInt(0);
-
-    listOfFileStats.forEach((stat) => {
-      directorySize += stat.size;
-    });
-
-    let numOfSubDirFiles = 0;
-    let numOfSubDirectories = 0;
-    listOfDirectoryStats.forEach((stat) => {
-      directorySize += stat.size;
-      if (count) {
-        numOfSubDirFiles += stat.numFiles;
-        numOfSubDirectories += stat.numDirs;
-      }
-    });
-
-    return {
-      birthTime,
-      lastModifiedTime,
-      size: directorySize,
-      numFiles: count ? listOfFileStats.length + numOfSubDirFiles : undefined,
-      numDirs: count
-        ? listOfDirectoryStats.length + numOfSubDirectories
-        : undefined,
-    };
-  } catch (error) {
-    if (depth === 0) {
-      console.error("\nUnable to scan this directory due to OS permissions.");
-    }
-    return {
-      size: BigInt(0),
-      numFiles: 0,
-      numDirs: 0,
-    };
-  }
-};
+interface DirEnt {
+  filename: string;
+  fileStat: Stats;
+}
 
 interface Option {
   name: string;
@@ -122,6 +54,119 @@ interface ArgV {
   count: boolean;
   help: boolean;
 }
+
+const getDirEnts = async (
+  directoryPath: string,
+  filenames: string[]
+): Promise<DirEnt[]> => {
+  const dirEntPromises: Promise<DirEnt>[] = filenames.map(
+    async (filename: string) => {
+      const fileStat: Stats = await stat(path.join(directoryPath, filename), {
+        bigint: true,
+      });
+      return { filename, fileStat };
+    }
+  );
+
+  return Promise.all(dirEntPromises);
+};
+
+const getListOfFileStats = (listOfDirEnts: DirEnt[]) => {
+  const listOfFiles: DirEnt[] = listOfDirEnts.filter(({ fileStat }) => {
+    return fileStat.isFile();
+  });
+
+  return listOfFiles.map(({ fileStat }) => {
+    return fileStat;
+  });
+};
+
+const getListOfDirStats = (
+  listOfDirEnts: DirEnt[],
+  directoryPath: string,
+  depth: number,
+  log: boolean,
+  count: boolean
+) => {
+  const listOfDirectories: DirEnt[] = listOfDirEnts.filter(({ fileStat }) => {
+    return fileStat.isDirectory();
+  });
+
+  const dirStatPromises: Promise<DirectoryStat>[] = listOfDirectories.map(
+    ({ filename }) => {
+      return getStatOfDirectory(
+        path.join(directoryPath, filename),
+        depth + 1,
+        log,
+        count
+      );
+    }
+  );
+
+  return Promise.all(dirStatPromises);
+};
+
+const getStatOfDirectory = async (
+  directoryPath: string,
+  depth: number,
+  log: boolean,
+  count: boolean
+): Promise<DirectoryStat> => {
+  if (log && depth < 3) {
+    console.log(`Measuring ${directoryPath}...`);
+  }
+
+  try {
+    const filenames: string[] = await readdir(directoryPath);
+    const listOfDirEnts: DirEnt[] = await getDirEnts(directoryPath, filenames);
+
+    const listOfFileStats: Stats[] = getListOfFileStats(listOfDirEnts);
+    const listOfDirectoryStats: DirectoryStat[] = await getListOfDirStats(
+      listOfDirEnts,
+      directoryPath,
+      depth,
+      log,
+      count
+    );
+
+    let directorySize = BigInt(0);
+
+    listOfFileStats.forEach((stat) => {
+      directorySize += BigInt(stat.size);
+    });
+
+    let numOfSubDirFiles = 0;
+    let numOfSubDirectories = 0;
+    listOfDirectoryStats.forEach((stat) => {
+      directorySize += stat.size;
+      if (count) {
+        numOfSubDirFiles += stat.numFiles;
+        numOfSubDirectories += stat.numDirs;
+      }
+    });
+
+    const directoryStat: Stats = await stat(directoryPath, { bigint: true });
+    const birthTime = directoryStat.birthtimeMs;
+    const lastModifiedTime = directoryStat.mtimeMs;
+
+    return {
+      birthTime,
+      lastModifiedTime,
+      size: directorySize,
+      numFiles: count ? listOfFileStats.length + numOfSubDirFiles : 0,
+      numDirs: count ? listOfDirectoryStats.length + numOfSubDirectories : 0,
+    };
+  } catch (error) {
+    if (depth === 0) {
+      console.error("\nUnable to scan this directory due to OS permissions.");
+    }
+    return {
+      size: BigInt(0),
+      numFiles: 0,
+      numDirs: 0,
+    };
+  }
+};
 
 const optionDefinitions: Option[] = [
   {
@@ -201,7 +246,7 @@ if (!options?.rootdir && !options?.file) {
     if (!existsSync(rootdir)) {
       console.error("This path does not exist. Please try again.");
     } else {
-      statOfDirectory(rootdir, 0, log, count).then((data) => {
+      getStatOfDirectory(rootdir, 0, log, count).then((data) => {
         console.log({
           rootdir,
           ...data,
