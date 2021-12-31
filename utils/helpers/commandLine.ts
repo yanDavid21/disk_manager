@@ -11,13 +11,6 @@ export const optionDefinitions: Option[] = [
     description: "Directory path to start recursive lookup on disk usage.",
   },
   {
-    name: "file",
-    alias: "f",
-    type: String,
-    typeLabel: "{underline filepath}",
-    description: "File path for file meta data lookup.",
-  },
-  {
     name: "log",
     alias: "l",
     type: Boolean,

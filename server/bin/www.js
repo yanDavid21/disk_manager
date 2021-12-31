@@ -5,27 +5,27 @@
 const app = require("../app");
 const debug = require("debug")("disk-manager:server");
 const http = require("http");
+const open = require("open");
 
 const startServer = () => {
   /**
    * Get port from environment and store in Express.
    */
 
-  var port = normalizePort(process.env.PORT || "3000");
+  const port = normalizePort(process.env.PORT || "3000");
   app.set("port", port);
 
   /**
    * Create HTTP server.
    */
 
-  var server = http.createServer(app);
+  const server = http.createServer(app);
 
   /**
    * Listen on provided port, on all network interfaces.
    */
 
   server.listen(port);
-  console.log("Listening on " + port);
   server.on("error", onError);
   server.on("listening", onListening);
 
@@ -34,7 +34,7 @@ const startServer = () => {
    */
 
   function normalizePort(val) {
-    var port = parseInt(val, 10);
+    const port = parseInt(val, 10);
 
     if (isNaN(port)) {
       // named pipe
@@ -58,7 +58,7 @@ const startServer = () => {
       throw error;
     }
 
-    var bind = typeof port === "string" ? "Pipe " + port : "Port " + port;
+    const bind = typeof port === "string" ? "Pipe " + port : "Port " + port;
 
     // handle specific listen errors with friendly messages
     switch (error.code) {
@@ -80,9 +80,12 @@ const startServer = () => {
    */
 
   function onListening() {
-    var addr = server.address();
-    var bind = typeof addr === "string" ? "pipe " + addr : "port " + addr.port;
+    const addr = server.address();
+    const bind =
+      typeof addr === "string" ? "pipe " + addr : "port " + addr.port;
     debug("Listening on " + bind);
+    console.log("Listening on " + port);
+    open(`http://localhost:${port}`);
   }
 };
 

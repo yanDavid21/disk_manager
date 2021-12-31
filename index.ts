@@ -1,65 +1,46 @@
 "use strict";
+//const os = require("os");
+//const osName: string = os.platform();
 
-const os = require("os");
 const path = require("path");
 const commandLineArgs = require("command-line-args");
-const { stat } = require("fs/promises");
-const { existsSync } = require("fs");
-const startServer = require("./server/bin/www");
-import { getStatOfDirectory } from "./utils/helpers/directory";
-import { ArgV } from "./utils/types";
+import { ArgV, DirectoryStat } from "./utils/types";
 import { processBigInt } from "./utils/helpers/common";
 import {
   optionDefinitions,
   handlePrintStatement,
 } from "./utils/helpers/commandLine";
+import { exit } from "process";
+const { existsSync } = require("fs");
+const startServer = require("./server/bin/www");
+import { getStatOfDirectory } from "./utils/helpers/directory";
 
-//const osName: string = os.platform();
+//get command line arguments
 const options = commandLineArgs(optionDefinitions);
+const { rootdir: rawRootdir, log, count, web }: ArgV = options;
 
+//print help statement
 handlePrintStatement(options);
 
-if (options?.rootdir || options?.file) {
-  const { rootdir: rawRootdir, file: rawFile, log, count, web }: ArgV = options;
-
-  if (rawRootdir) {
-    const rootdir = path.normalize(rawRootdir);
-    if (!existsSync(rootdir)) {
-      console.error("This path does not exist. Please try again.");
-    } else {
-      getStatOfDirectory(rootdir, 0, log, count).then((data) => {
-        console.log({
-          rootdir,
-          ...data,
-          size: processBigInt(data.size),
-        });
-        if (web) {
-          startServer();
-        }
-      });
-    }
-  }
-
-  if (rawFile) {
-    const file = path.normalize(rawFile);
-    if (!existsSync(file)) {
-      console.error("This path does not exist. Please try again.");
-    } else {
-      stat(file).then((data) => {
-        console.log({
-          file,
-          birthTime: data.birthtimeMs,
-          lastModifiedTime: data.mtimeMs,
-          size: processBigInt(data.size),
-        });
-        if (web) {
-          startServer();
-        }
-      });
-    }
-  }
-} else {
-  console.error(
-    "Error: Options must contain either a root directory path or file path."
-  );
+//if directory is falsy, terminate
+if (!options?.rootdir) {
+  console.error("Error: Options must contain either a root directory path.");
+  exit(1);
 }
+
+const pathName = path.normalize(rawRootdir);
+
+if (!existsSync(pathName)) {
+  console.error("This path does not exist. Please try again.");
+  exit(1);
+}
+
+getStatOfDirectory(pathName, 0, log, count).then((stat: DirectoryStat) => {
+  const result = {
+    directory: pathName,
+    ...stat,
+    size: processBigInt(stat.size),
+  };
+  console.log(result);
+  web && startServer();
+});

@@ -24,7 +24,6 @@ export interface Option {
 
 export interface ArgV {
   rootdir: string;
-  file: string;
   log: boolean;
   count: boolean;
   help: boolean;
