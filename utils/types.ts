@@ -4,6 +4,7 @@ export interface DirectoryStat {
   size: bigint;
   numFiles: number;
   numDirs: number;
+  subFolders: DirectoryStat[];
   birthTime?: number;
   lastModifiedTime?: number;
 }

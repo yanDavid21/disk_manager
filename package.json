@@ -5,7 +5,7 @@
   "main": "index.js",
   "type": "commonjs",
   "scripts": {
-    "compile": "tsc"
+    "compile": "tsc && cd server/frontend/ && npm run build"
   },
   "author": "David Yan",
   "license": "ISC",
@@ -14,6 +14,7 @@
     "command-line-args": "^5.2.0",
     "command-line-usage": "^6.1.1",
     "cookie-parser": "~1.4.4",
+    "create-react-app": "^5.0.0",
     "debug": "~2.6.9",
     "express": "~4.16.1",
     "http-errors": "~1.6.3",

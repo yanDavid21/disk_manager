@@ -92,6 +92,7 @@ export const getStatOfDirectory = async (
       birthTime,
       lastModifiedTime,
       size: directorySize,
+      subFolders: listOfDirectoryStats,
       numFiles: count ? listOfFileStats.length + numOfSubDirFiles : 0,
       numDirs: count ? listOfDirectoryStats.length + numOfSubDirectories : 0,
     };
@@ -103,6 +104,7 @@ export const getStatOfDirectory = async (
       size: BigInt(0),
       numFiles: 0,
       numDirs: 0,
+      subFolders: [],
     };
   }
 };
