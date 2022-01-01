@@ -1,7 +1,7 @@
 import { Stats } from "fs";
 
 export interface DirectoryStat {
-  size: bigint;
+  size: number;
   numFiles: number;
   numDirs: number;
   subFolders: DirectoryStat[];

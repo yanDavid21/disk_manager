@@ -1,23 +1,36 @@
-import logo from './logo.svg';
-import './App.css';
+import "./App.css";
+import { useEffect, useState } from "react";
+
+const initState = {
+  size: 0,
+  numFiles: 0,
+  numDirs: 0,
+  subFolders: [],
+  birthTime: undefined,
+  lastModifiedTime: undefined,
+};
+
+const BACKEND_URL = "http://localhost:8080/api/data";
 
 function App() {
+  const [dirStructs, setDirStructs] = useState(initState);
+  console.log(JSON.stringify(dirStructs));
+  useEffect(() => {
+    fetch(BACKEND_URL)
+      .then((response) => {
+        return response.json();
+      })
+      .then((data) => {
+        console.log(data);
+        setDirStructs(data);
+      })
+      .catch((err) => {
+        alert(err);
+      });
+  }, []);
   return (
     <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+      <p>{JSON.stringify(dirStructs)}</p>
     </div>
   );
 }

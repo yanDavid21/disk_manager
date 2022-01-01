@@ -5,7 +5,7 @@
 const path = require("path");
 const commandLineArgs = require("command-line-args");
 import { ArgV, DirectoryStat } from "./utils/types";
-import { processBigInt } from "./utils/helpers/common";
+// import { processBigInt } from "./utils/helpers/common";
 import {
   optionDefinitions,
   handlePrintStatement,
@@ -40,7 +40,6 @@ getStatOfDirectory(pathName, 0, log, count, web).then(
     const result = {
       directory: pathName,
       ...dstat,
-      size: processBigInt(dstat.size),
     };
     console.log(result);
     web && startServer(result);

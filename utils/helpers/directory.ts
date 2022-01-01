@@ -11,7 +11,7 @@ const getDirEnts = async (
   const dirEntPromises: Promise<DirEnt>[] = filenames.map(
     async (filename: string) => {
       const fileStat: Stats = await stat(path.join(directoryPath, filename), {
-        bigint: true,
+        bigint: false,
       });
       return { filename, fileStat };
     }
@@ -72,10 +72,10 @@ export const getStatOfDirectory = async (
       web
     );
 
-    let directorySize = BigInt(0);
+    let directorySize = 0;
 
     listOfFileStats.forEach((stat) => {
-      directorySize += BigInt(stat.size);
+      directorySize += stat.size;
     });
 
     let numOfSubDirFiles = 0;
@@ -88,7 +88,7 @@ export const getStatOfDirectory = async (
       }
     });
 
-    const directoryStat: Stats = await stat(directoryPath, { bigint: true });
+    const directoryStat: Stats = await stat(directoryPath, { bigint: false });
     const birthTime = directoryStat.birthtimeMs;
     const lastModifiedTime = directoryStat.mtimeMs;
 
@@ -105,7 +105,7 @@ export const getStatOfDirectory = async (
       console.error("\nUnable to scan this directory due to OS permissions.");
     }
     return {
-      size: BigInt(0),
+      size: 0,
       numFiles: 0,
       numDirs: 0,
       subFolders: [],
