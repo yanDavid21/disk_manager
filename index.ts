@@ -35,12 +35,12 @@ if (!existsSync(pathName)) {
   exit(1);
 }
 
-getStatOfDirectory(pathName, 0, log, count).then((stat: DirectoryStat) => {
+getStatOfDirectory(pathName, 0, log, count).then((dstat: DirectoryStat) => {
   const result = {
     directory: pathName,
-    ...stat,
-    size: processBigInt(stat.size),
+    ...dstat,
+    size: processBigInt(dstat.size),
   };
   console.log(result);
-  web && startServer();
+  web && startServer(result);
 });

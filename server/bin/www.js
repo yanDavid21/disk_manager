@@ -7,7 +7,7 @@ const debug = require("debug")("disk-manager:server");
 const http = require("http");
 const open = require("open");
 
-const startServer = () => {
+const startServer = (directoryStruct) => {
   /**
    * Get port from environment and store in Express.
    */
@@ -86,6 +86,7 @@ const startServer = () => {
     debug("Listening on " + bind);
     console.log("Listening on " + port);
     open(`http://localhost:${port}`);
+    app.set("data", directoryStruct);
   }
 };
 

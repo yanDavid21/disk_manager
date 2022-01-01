@@ -1,9 +1,10 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
 
-/* GET users listing. */
-router.get('/', function(req, res, next) {
-  res.send('respond with a resource');
+router.get("/", function (req, res, next) {
+  const { size, numFiles, numDirs } = req.app.get("data");
+  console.log({ size, numFiles, numDirs });
+  res.json({ size, files: numFiles, folders: numDirs });
 });
 
 module.exports = router;
