@@ -25,7 +25,8 @@ const getListOfDirStats = (
   directoryPath: string,
   depth: number,
   log: boolean,
-  count: boolean
+  count: boolean,
+  web: boolean
 ) => {
   const listOfDirectories: DirEnt[] = listOfDirEnts.filter(({ fileStat }) => {
     return fileStat.isDirectory();
@@ -37,7 +38,8 @@ const getListOfDirStats = (
         path.join(directoryPath, filename),
         depth + 1,
         log,
-        count
+        count,
+        web
       );
     }
   );
@@ -49,7 +51,8 @@ export const getStatOfDirectory = async (
   directoryPath: string,
   depth: number,
   log: boolean,
-  count: boolean
+  count: boolean,
+  web: boolean
 ): Promise<DirectoryStat> => {
   if (log && depth < 3) {
     console.log(`Measuring ${directoryPath}...`);
@@ -65,7 +68,8 @@ export const getStatOfDirectory = async (
       directoryPath,
       depth,
       log,
-      count
+      count,
+      web
     );
 
     let directorySize = BigInt(0);
@@ -92,7 +96,7 @@ export const getStatOfDirectory = async (
       birthTime,
       lastModifiedTime,
       size: directorySize,
-      subFolders: listOfDirectoryStats,
+      subFolders: web ? listOfDirectoryStats : [],
       numFiles: count ? listOfFileStats.length + numOfSubDirFiles : 0,
       numDirs: count ? listOfDirectoryStats.length + numOfSubDirectories : 0,
     };
