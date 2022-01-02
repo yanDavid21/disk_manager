@@ -9,6 +9,11 @@ export interface DirectoryStat {
   lastModifiedTime?: number;
 }
 
+export interface DirectoryLabel {
+  name: string;
+  subFolders: DirectoryLabel[];
+}
+
 export interface DirEnt {
   filename: string;
   fileStat: Stats;

@@ -1,7 +1,4 @@
 "use strict";
-//const os = require("os");
-//const osName: string = os.platform();
-
 const path = require("path");
 const commandLineArgs = require("command-line-args");
 import { ArgV, DirectoryStat } from "./utils/types";
@@ -12,8 +9,11 @@ import {
 } from "./utils/helpers/commandLine";
 import { exit } from "process";
 const { existsSync } = require("fs");
-const startServer = require("./server/bin/www");
-import { getStatOfDirectory } from "./utils/helpers/directory";
+const { startServer, updateDirectoryStruct } = require("./server/bin/www");
+import {
+  getStatOfDirectory,
+  getDirectoryNames,
+} from "./utils/helpers/directory";
 
 //get command line arguments
 const options = commandLineArgs(optionDefinitions);
@@ -35,13 +35,46 @@ if (!existsSync(pathName)) {
   exit(1);
 }
 
-getStatOfDirectory(pathName, 0, log, count, web).then(
-  (dstat: DirectoryStat) => {
-    const result = {
-      directory: pathName,
-      ...dstat,
-    };
-    console.log(result);
-    web && startServer(result);
-  }
-);
+if (web) {
+  getDirectoryNames(pathName, "").then((nameStructs) => {
+    startServer(nameStructs);
+  });
+
+  getStatOfDirectory(pathName, 0, log, count, web).then(
+    (dstat: DirectoryStat) => {
+      const result = {
+        directory: pathName,
+        ...dstat,
+      };
+      updateDirectoryStruct(result);
+    }
+  );
+} else {
+  getStatOfDirectory(pathName, 0, log, count, web).then(
+    (dstat: DirectoryStat) => {
+      const result = {
+        directory: pathName,
+        ...dstat,
+      };
+
+      console.log(result);
+    }
+  );
+}
+
+// getStatOfDirectory(pathName, 0, log, count, web).then(
+//   (dstat: DirectoryStat) => {
+//     const result = {
+//       directory: pathName,
+//       ...dstat,
+//     };
+
+//     // if (web) {
+//     //   startServer(result);
+//     // } else {
+//     //   console.log(result);
+//     // }
+//     console.log(result);
+//     console.log("new");
+//   }
+// );

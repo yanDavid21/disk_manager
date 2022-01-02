@@ -1,8 +1,12 @@
 import { Stats } from "fs";
 const { readdir, stat } = require("fs/promises");
 const path = require("path");
-import { DirectoryStat, DirEnt } from "../types";
+import { DirectoryLabel, DirectoryStat, DirEnt } from "../types";
 import { getListOfFileStats } from "./file";
+const os = require("os");
+
+const osName: string = os.platform();
+const fileSeparator = osName === "win32" ? "\\" : "/";
 
 const getDirEnts = async (
   directoryPath: string,
@@ -111,4 +115,31 @@ export const getStatOfDirectory = async (
       subFolders: [],
     };
   }
+};
+
+export const getDirectoryNames = async (
+  parentPath: string,
+  directoryName: string
+): Promise<DirectoryLabel> => {
+  const directoryPath = path.join(parentPath, directoryName);
+
+  let index = directoryPath.lastIndexOf(fileSeparator);
+  if (index === directoryPath.length - 1) {
+    index = directoryPath.lastIndexOf(fileSeparator, index - 1);
+  }
+  const dirName = index > -1 ? directoryPath.substring(index + 1) : directoryPath;
+
+  const filenames: string[] = await readdir(directoryPath);
+  const listOfDirEnts: DirEnt[] = await getDirEnts(directoryPath, filenames);
+  const listOfSubDirectories: DirEnt[] = listOfDirEnts.filter(({ fileStat }) => {
+    return fileStat.isDirectory();
+  });
+  const namesOfSubDirectories: string[] = listOfSubDirectories.map(({ filename }) => {
+    return filename;
+  });
+
+  return {
+    name: dirName,
+    subFolders: await Promise.all(namesOfSubDirectories.map((name) => getDirectoryNames(directoryPath, name))) //recursive call
+  };
 };

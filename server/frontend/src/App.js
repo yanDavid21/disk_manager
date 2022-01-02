@@ -14,7 +14,6 @@ const BACKEND_URL = "http://localhost:8080/api/data";
 
 function App() {
   const [dirStructs, setDirStructs] = useState(initState);
-  console.log(JSON.stringify(dirStructs));
   useEffect(() => {
     fetch(BACKEND_URL)
       .then((response) => {
@@ -22,6 +21,18 @@ function App() {
       })
       .then((data) => {
         console.log(data);
+      })
+      .catch((err) => {
+        alert(err);
+      });
+  }, []);
+
+  useEffect(() => {
+    fetch(`${BACKEND_URL}/stat`)
+      .then((response) => {
+        return response.json();
+      })
+      .then((data) => {
         setDirStructs(data);
       })
       .catch((err) => {
