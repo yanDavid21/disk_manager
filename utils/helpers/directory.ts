@@ -1,4 +1,5 @@
 import { Stats } from "fs";
+import { resolve } from "path/posix";
 const { readdir, stat } = require("fs/promises");
 const path = require("path");
 import { DirectoryLabel, DirectoryStat, DirEnt } from "../types";
@@ -24,40 +25,14 @@ const getDirEnts = async (
   return Promise.all(dirEntPromises);
 };
 
-const getListOfDirStats = (
-  listOfDirEnts: DirEnt[],
-  directoryPath: string,
-  depth: number,
-  log: boolean,
-  count: boolean,
-  web: boolean
-) => {
-  const listOfDirectories: DirEnt[] = listOfDirEnts.filter(({ fileStat }) => {
-    return fileStat.isDirectory();
-  });
-
-  const dirStatPromises: Promise<DirectoryStat>[] = listOfDirectories.map(
-    ({ filename }) => {
-      return getStatOfDirectory(
-        path.join(directoryPath, filename),
-        depth + 1,
-        log,
-        count,
-        web
-      );
-    }
-  );
-
-  return Promise.all(dirStatPromises);
-};
-
 export const getStatOfDirectory = async (
   directoryPath: string,
   depth: number,
   log: boolean,
   count: boolean,
-  web: boolean
-): Promise<DirectoryStat> => {
+  web: boolean,
+  accumalatorDict: Record<string, DirectoryStat>
+): Promise<void> => {
   if (log && depth < 3) {
     console.log(`Measuring ${directoryPath}...`);
   }
@@ -67,13 +42,21 @@ export const getStatOfDirectory = async (
     const listOfDirEnts: DirEnt[] = await getDirEnts(directoryPath, filenames);
 
     const listOfFileStats: Stats[] = getListOfFileStats(listOfDirEnts);
-    const listOfDirectoryStats: DirectoryStat[] = await getListOfDirStats(
-      listOfDirEnts,
-      directoryPath,
-      depth,
-      log,
-      count,
-      web
+    const listOfDirectories: DirEnt[] = listOfDirEnts.filter(({ fileStat }) => {
+      return fileStat.isDirectory();
+    });
+
+    await Promise.all(
+      listOfDirectories.map((dir: DirEnt) => {
+        return getStatOfDirectory(
+          path.join(directoryPath, dir.filename),
+          depth + 1,
+          log,
+          count,
+          web,
+          accumalatorDict
+        );
+      })
     );
 
     let directorySize = 0;
@@ -84,11 +67,12 @@ export const getStatOfDirectory = async (
 
     let numOfSubDirFiles = 0;
     let numOfSubDirectories = 0;
-    listOfDirectoryStats.forEach((stat) => {
-      directorySize += stat.size;
+    listOfDirectories.forEach((dir: DirEnt) => {
+      const dirStat = accumalatorDict[path.join(directoryPath, dir.filename)];
+      directorySize += dirStat.size;
       if (count) {
-        numOfSubDirFiles += stat.numFiles;
-        numOfSubDirectories += stat.numDirs;
+        numOfSubDirFiles += dirStat.numFiles;
+        numOfSubDirectories += dirStat.numDirs;
       }
     });
 
@@ -96,24 +80,19 @@ export const getStatOfDirectory = async (
     const birthTime = directoryStat.birthtimeMs;
     const lastModifiedTime = directoryStat.mtimeMs;
 
-    return {
+    accumalatorDict[directoryPath] = {
       birthTime,
       lastModifiedTime,
       size: directorySize,
-      subFolders: web ? listOfDirectoryStats : [],
       numFiles: count ? listOfFileStats.length + numOfSubDirFiles : 0,
-      numDirs: count ? listOfDirectoryStats.length + numOfSubDirectories : 0,
+      numDirs: count ? listOfDirectories.length + numOfSubDirectories : 0,
     };
   } catch (error) {
     if (depth === 0) {
+      console.error(error);
       console.error("\nUnable to scan this directory due to OS permissions.");
     }
-    return {
-      size: 0,
-      numFiles: 0,
-      numDirs: 0,
-      subFolders: [],
-    };
+    accumalatorDict[directoryPath] = { size: 0, numFiles: 0, numDirs: 0 };
   }
 };
 
@@ -134,6 +113,7 @@ export const getDirectoryNames = async (
   //provides a leaf node for lazy loading
   if (depth === 0) {
     return {
+      path: directoryPath,
       name: dirName,
       subFolders: [],
     };
@@ -153,11 +133,13 @@ export const getDirectoryNames = async (
   );
 
   return {
+    path: directoryPath,
     name: dirName,
-    subFolders: await Promise.all( //recursive call
+    subFolders: await Promise.all(
+      //recursive call
       namesOfSubDirectories.map((name) =>
         getDirectoryNames(directoryPath, name, depth - 1)
       )
-    ), 
+    ),
   };
 };

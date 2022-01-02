@@ -4,12 +4,12 @@ export interface DirectoryStat {
   size: number;
   numFiles: number;
   numDirs: number;
-  subFolders: DirectoryStat[];
   birthTime?: number;
   lastModifiedTime?: number;
 }
 
 export interface DirectoryLabel {
+  path: string;
   name: string;
   subFolders: DirectoryLabel[];
 }

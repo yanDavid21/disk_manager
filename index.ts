@@ -35,28 +35,23 @@ if (!existsSync(pathName)) {
   exit(1);
 }
 
+const accumalatorDict = {};
+
 if (web) {
   getDirectoryNames(pathName, "", 5).then((nameStructs) => {
     startServer(nameStructs);
-    getStatOfDirectory(pathName, 0, log, count, web).then(
-      (dstat: DirectoryStat) => {
-        const result = {
-          directory: pathName,
-          ...dstat,
-        };
-        updateDirectoryStruct(result);
+    getStatOfDirectory(pathName, 0, log, count, web, accumalatorDict).then(
+      () => {
+        updateDirectoryStruct(accumalatorDict);
       }
     );
   });
 } else {
-  getStatOfDirectory(pathName, 0, log, count, web).then(
-    (dstat: DirectoryStat) => {
-      const result = {
-        directory: pathName,
-        ...dstat,
-      };
-
-      console.log(result);
-    }
-  );
+  getStatOfDirectory(pathName, 0, log, count, web, accumalatorDict).then(() => {
+    const result = {
+      directory: pathName,
+      ...accumalatorDict[pathName],
+    };
+    console.log(result);
+  });
 }
