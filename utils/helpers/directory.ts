@@ -119,7 +119,8 @@ export const getStatOfDirectory = async (
 
 export const getDirectoryNames = async (
   parentPath: string,
-  directoryName: string
+  directoryName: string,
+  depth: number
 ): Promise<DirectoryLabel> => {
   const directoryPath = path.join(parentPath, directoryName);
 
@@ -127,19 +128,36 @@ export const getDirectoryNames = async (
   if (index === directoryPath.length - 1) {
     index = directoryPath.lastIndexOf(fileSeparator, index - 1);
   }
-  const dirName = index > -1 ? directoryPath.substring(index + 1) : directoryPath;
+  const dirName =
+    index > -1 ? directoryPath.substring(index + 1) : directoryPath;
+
+  //provides a leaf node for lazy loading
+  if (depth === 0) {
+    return {
+      name: dirName,
+      subFolders: [],
+    };
+  }
 
   const filenames: string[] = await readdir(directoryPath);
   const listOfDirEnts: DirEnt[] = await getDirEnts(directoryPath, filenames);
-  const listOfSubDirectories: DirEnt[] = listOfDirEnts.filter(({ fileStat }) => {
-    return fileStat.isDirectory();
-  });
-  const namesOfSubDirectories: string[] = listOfSubDirectories.map(({ filename }) => {
-    return filename;
-  });
+  const listOfSubDirectories: DirEnt[] = listOfDirEnts.filter(
+    ({ fileStat }) => {
+      return fileStat.isDirectory();
+    }
+  );
+  const namesOfSubDirectories: string[] = listOfSubDirectories.map(
+    ({ filename }) => {
+      return filename;
+    }
+  );
 
   return {
     name: dirName,
-    subFolders: await Promise.all(namesOfSubDirectories.map((name) => getDirectoryNames(directoryPath, name))) //recursive call
+    subFolders: await Promise.all( //recursive call
+      namesOfSubDirectories.map((name) =>
+        getDirectoryNames(directoryPath, name, depth - 1)
+      )
+    ), 
   };
 };

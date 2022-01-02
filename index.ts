@@ -36,19 +36,18 @@ if (!existsSync(pathName)) {
 }
 
 if (web) {
-  getDirectoryNames(pathName, "").then((nameStructs) => {
+  getDirectoryNames(pathName, "", 5).then((nameStructs) => {
     startServer(nameStructs);
+    getStatOfDirectory(pathName, 0, log, count, web).then(
+      (dstat: DirectoryStat) => {
+        const result = {
+          directory: pathName,
+          ...dstat,
+        };
+        updateDirectoryStruct(result);
+      }
+    );
   });
-
-  getStatOfDirectory(pathName, 0, log, count, web).then(
-    (dstat: DirectoryStat) => {
-      const result = {
-        directory: pathName,
-        ...dstat,
-      };
-      updateDirectoryStruct(result);
-    }
-  );
 } else {
   getStatOfDirectory(pathName, 0, log, count, web).then(
     (dstat: DirectoryStat) => {
@@ -61,20 +60,3 @@ if (web) {
     }
   );
 }
-
-// getStatOfDirectory(pathName, 0, log, count, web).then(
-//   (dstat: DirectoryStat) => {
-//     const result = {
-//       directory: pathName,
-//       ...dstat,
-//     };
-
-//     // if (web) {
-//     //   startServer(result);
-//     // } else {
-//     //   console.log(result);
-//     // }
-//     console.log(result);
-//     console.log("new");
-//   }
-// );
