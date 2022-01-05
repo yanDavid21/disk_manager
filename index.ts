@@ -1,19 +1,20 @@
 "use strict";
 const path = require("path");
 const commandLineArgs = require("command-line-args");
-import { ArgV, DirectoryStat } from "./utils/types";
-// import { processBigInt } from "./utils/helpers/common";
+const { existsSync } = require("fs");
+const { startServer, updateDirectoryStruct } = require("./server/bin/www");
+import { ArgV } from "./utils/types";
 import {
   optionDefinitions,
   handlePrintStatement,
 } from "./utils/helpers/commandLine";
 import { exit } from "process";
-const { existsSync } = require("fs");
-const { startServer, updateDirectoryStruct } = require("./server/bin/www");
 import {
   getStatOfDirectory,
   getDirectoryNames,
 } from "./utils/helpers/directory";
+
+export const initNameTreeDepth = 3;
 
 //get command line arguments
 const options = commandLineArgs(optionDefinitions);
@@ -35,22 +36,37 @@ if (!existsSync(pathName)) {
   exit(1);
 }
 
-const accumalatorDict = {};
+const accumalatorDirectoryDict = {};
+const accumalatorNameDict = {};
 
 if (web) {
-  getDirectoryNames(pathName, "", 5).then((nameStructs) => {
-    startServer(nameStructs);
-    getStatOfDirectory(pathName, 0, log, count, web, accumalatorDict).then(
-      () => {
-        updateDirectoryStruct(accumalatorDict);
-      }
-    );
-  });
+  getDirectoryNames(pathName, "", initNameTreeDepth, accumalatorNameDict).then(
+    () => {
+      startServer(accumalatorNameDict, initNameTreeDepth, pathName);
+      getStatOfDirectory(
+        pathName,
+        0,
+        log,
+        count,
+        web,
+        accumalatorDirectoryDict
+      ).then(() => {
+        updateDirectoryStruct(accumalatorDirectoryDict);
+      });
+    }
+  );
 } else {
-  getStatOfDirectory(pathName, 0, log, count, web, accumalatorDict).then(() => {
+  getStatOfDirectory(
+    pathName,
+    0,
+    log,
+    count,
+    web,
+    accumalatorDirectoryDict
+  ).then(() => {
     const result = {
       directory: pathName,
-      ...accumalatorDict[pathName],
+      ...accumalatorDirectoryDict[pathName],
     };
     console.log(result);
   });

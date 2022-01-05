@@ -99,8 +99,9 @@ export const getStatOfDirectory = async (
 export const getDirectoryNames = async (
   parentPath: string,
   directoryName: string,
-  depth: number
-): Promise<DirectoryLabel> => {
+  depth: number,
+  accumalator: Record<string, DirectoryLabel>
+): Promise<void> => {
   const directoryPath = path.join(parentPath, directoryName);
 
   let index = directoryPath.lastIndexOf(fileSeparator);
@@ -111,12 +112,12 @@ export const getDirectoryNames = async (
     index > -1 ? directoryPath.substring(index + 1) : directoryPath;
 
   //provides a leaf node for lazy loading
-  if (depth === 0) {
-    return {
-      path: directoryPath,
+  if (depth === 1) {
+    accumalator[directoryPath] = {
       name: dirName,
       subFolders: [],
     };
+    return;
   }
 
   const filenames: string[] = await readdir(directoryPath);
@@ -131,15 +132,17 @@ export const getDirectoryNames = async (
       return filename;
     }
   );
+  await Promise.all(
+    //recursive call
+    namesOfSubDirectories.map((name) =>
+      getDirectoryNames(directoryPath, name, depth - 1, accumalator)
+    )
+  );
 
-  return {
-    path: directoryPath,
+  accumalator[directoryPath] = {
     name: dirName,
-    subFolders: await Promise.all(
-      //recursive call
-      namesOfSubDirectories.map((name) =>
-        getDirectoryNames(directoryPath, name, depth - 1)
-      )
+    subFolders: namesOfSubDirectories.map((name) =>
+      path.join(directoryPath, name)
     ),
   };
 };

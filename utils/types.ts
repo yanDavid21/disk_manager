@@ -9,9 +9,8 @@ export interface DirectoryStat {
 }
 
 export interface DirectoryLabel {
-  path: string;
   name: string;
-  subFolders: DirectoryLabel[];
+  subFolders: string[];
 }
 
 export interface DirEnt {
