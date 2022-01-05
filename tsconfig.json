@@ -3,6 +3,7 @@
     "target": "es2017",
     "module": "CommonJS",
     "strictNullChecks": true
+    //"outDir": "ts_compiled"
   },
   "include": ["**/*.ts"]
 }
