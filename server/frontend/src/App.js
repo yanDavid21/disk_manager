@@ -6,6 +6,14 @@ import TreeItem from "@mui/lab/TreeItem";
 import { Grid } from "@mui/material";
 import Paper from "@mui/material/Paper";
 
+const BACKEND_URL = "http://localhost:8080/api/data";
+
+const DirectoryStats = (selectedFolder) => {
+  return Object.keys(selectedFolder.folder).map((key) => {
+    return <p key={key}>{`${key}: ${selectedFolder.folder[key]}`}</p>;
+  });
+};
+
 const initState = {
   birthTime: 0,
   lastModifiedTime: 0,
@@ -14,23 +22,12 @@ const initState = {
   numDirs: 0,
 };
 
-const DirectoryStats = (selectedFolder) => {
-  return (
-    <>
-      {Object.keys(selectedFolder.folder).map((key) => {
-        return <p key={key}>{`${key}: ${selectedFolder.folder[key]}`}</p>;
-      })}
-    </>
-  );
-};
-
-const BACKEND_URL = "http://localhost:8080/api/data";
-
 const App = () => {
-  const [directoryDict, setDirectoryDict] = useState({});
-  const [nameStruct, setNameStruct] = useState(null);
-  const [selectedFolder, setSelectedFolder] = useState(initState);
-  const [rootDir, setRootDir] = useState(null);
+  const [rootDir, setRootDir] = useState(null); //root directory
+  const [selectedFolder, setSelectedFolder] = useState(initState); //current selected folder
+  const [directoryDict, setDirectoryDict] = useState({}); //dictionary mapping folder name to folder stats
+  const [nameStruct, setNameStruct] = useState(null); //nested tree structure representing the relationship between folders (stores folder names)
+  const [exploredFolders, setExploredFolders] = useState(new Set());
 
   const fetchInitData = () => {
     fetch(BACKEND_URL)
@@ -41,6 +38,7 @@ const App = () => {
         console.log(data);
         setRootDir(data.rootDir);
         setNameStruct(data.nameStruct);
+        setExploredFolders(new Set([data.rootDir]));
       })
       .catch((err) => {
         alert(err);
@@ -59,10 +57,12 @@ const App = () => {
       });
   };
 
-  const convertStructToTree = (nameStruct, directoryPath) => {
+  const convertStructToTreeItem = (nameStruct, directoryPath) => {
     const { name, subFolders } = nameStruct[directoryPath];
+
+    //if the current folder has never been expanded, when clicked for the first time,
     const fetchNewNames = () => {
-      if (subFolders.length === 0) {
+      if (!exploredFolders.has(name)) {
         fetch(
           `${BACKEND_URL}/names/${directoryPath
             .replaceAll("\\", "%5C")
@@ -73,6 +73,7 @@ const App = () => {
           })
           .then((data) => {
             setNameStruct(data);
+            setExploredFolders(new Set([...Array.from(exploredFolders), name])); 
           })
           .catch((err) => {
             alert(err);
@@ -88,7 +89,7 @@ const App = () => {
         onClick={fetchNewNames}
       >
         {subFolders.map((subFolder) =>
-          convertStructToTree(nameStruct, subFolder)
+          convertStructToTreeItem(nameStruct, subFolder)
         )}
       </TreeItem>
     );
@@ -109,7 +110,7 @@ const App = () => {
               setSelectedFolder(directoryDict[nodeId]);
             }}
           >
-            {nameStruct && convertStructToTree(nameStruct, rootDir)}
+            {nameStruct && convertStructToTreeItem(nameStruct, rootDir)}
           </TreeView>
         </div>
       </Grid>
