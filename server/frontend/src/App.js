@@ -6,13 +6,7 @@ import TreeItem from "@mui/lab/TreeItem";
 import { Grid } from "@mui/material";
 import Paper from "@mui/material/Paper";
 
-const initState = {
-  birthTime: 0,
-  lastModifiedTime: 0,
-  size: 0,
-  numFiles: 0,
-  numDirs: 0,
-};
+const BACKEND_URL = "http://localhost:8080/api/data";
 
 const DirectoryStats = (selectedFolder) => {
   return (
@@ -24,14 +18,20 @@ const DirectoryStats = (selectedFolder) => {
   );
 };
 
-const BACKEND_URL = "http://localhost:8080/api/data";
+const initState = {
+  birthTime: 0,
+  lastModifiedTime: 0,
+  size: 0,
+  numFiles: 0,
+  numDirs: 0,
+};
 
 const App = () => {
-  const [directoryDict, setDirectoryDict] = useState({});
-  const [nameStruct, setNameStruct] = useState(null);
-  const [selectedFolder, setSelectedFolder] = useState(initState);
-  const [rootDir, setRootDir] = useState(null);
-
+  const [rootDir, setRootDir] = useState(null); //root directory
+  const [selectedFolder, setSelectedFolder] = useState(initState); //current selected folder
+  const [directoryDict, setDirectoryDict] = useState({}); //dictionary mapping folder name to folder stats
+  const [nameStruct, setNameStruct] = useState(null); //nested tree structure representing the relationship between folders (stores folder names)
+  const [exploredFolders, setExploredFolders] = useState(new Set());
   const fetchInitData = () => {
     fetch(BACKEND_URL)
       .then((response) => {
@@ -41,28 +41,35 @@ const App = () => {
         console.log(data);
         setRootDir(data.rootDir);
         setNameStruct(data.nameStruct);
+        setExploredFolders(new Set([data.rootDir]));
       })
       .catch((err) => {
         alert(err);
+        console.log("error here2")
       });
   };
+
   const fetchDirectoryMap = () => {
     fetch(`${BACKEND_URL}/stat`)
       .then((response) => {
         return response.json();
       })
       .then((data) => {
+        console.log(data);
         setDirectoryDict(data);
       })
       .catch((err) => {
         alert(err);
+        console.log("error here");
       });
   };
 
-  const convertStructToTree = (nameStruct, directoryPath) => {
+  const convertStructToTreeItem = (nameStruct, directoryPath) => {
     const { name, subFolders } = nameStruct[directoryPath];
+
+    //if the current folder has never been expanded, when clicked for the first time,
     const fetchNewNames = () => {
-      if (subFolders.length === 0) {
+      if (!exploredFolders.has(name)) {
         fetch(
           `${BACKEND_URL}/names/${directoryPath
             .replaceAll("\\", "%5C")
@@ -73,6 +80,7 @@ const App = () => {
           })
           .then((data) => {
             setNameStruct(data);
+            setExploredFolders(new Set([...Array.from(exploredFolders), name]));
           })
           .catch((err) => {
             alert(err);
@@ -88,7 +96,7 @@ const App = () => {
         onClick={fetchNewNames}
       >
         {subFolders.map((subFolder) =>
-          convertStructToTree(nameStruct, subFolder)
+          convertStructToTreeItem(nameStruct, subFolder)
         )}
       </TreeItem>
     );
@@ -109,13 +117,28 @@ const App = () => {
               setSelectedFolder(directoryDict[nodeId]);
             }}
           >
-            {nameStruct && convertStructToTree(nameStruct, rootDir)}
+            {nameStruct && convertStructToTreeItem(nameStruct, rootDir)}
           </TreeView>
         </div>
       </Grid>
       <Grid item xs={6}>
-        <div style={{ padding: "2em", height: "100vh" }}>
-          <Paper variant="outlined" sx={{ height: "50vh", padding: 1 }}>
+        <div
+          style={{
+            height: "100vh",
+            width: "100%",
+          }}
+        >
+          <Paper
+            variant="outlined"
+            sx={{
+              height: "50vh",
+              padding: "1em",
+              top: "25%",
+              position: "fixed",
+              width: "100%",
+              boxSizing: "border-box",
+            }}
+          >
             Folder Information
             <DirectoryStats folder={selectedFolder} />
           </Paper>
