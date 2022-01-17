@@ -9,9 +9,13 @@ import Paper from "@mui/material/Paper";
 const BACKEND_URL = "http://localhost:8080/api/data";
 
 const DirectoryStats = (selectedFolder) => {
-  return Object.keys(selectedFolder.folder).map((key) => {
-    return <p key={key}>{`${key}: ${selectedFolder.folder[key]}`}</p>;
-  });
+  return (
+    <>
+      {Object.keys(selectedFolder.folder).map((key) => {
+        return <p key={key}>{`${key}: ${selectedFolder.folder[key]}`}</p>;
+      })}
+    </>
+  );
 };
 
 const initState = {
@@ -28,7 +32,6 @@ const App = () => {
   const [directoryDict, setDirectoryDict] = useState({}); //dictionary mapping folder name to folder stats
   const [nameStruct, setNameStruct] = useState(null); //nested tree structure representing the relationship between folders (stores folder names)
   const [exploredFolders, setExploredFolders] = useState(new Set());
-
   const fetchInitData = () => {
     fetch(BACKEND_URL)
       .then((response) => {
@@ -42,18 +45,22 @@ const App = () => {
       })
       .catch((err) => {
         alert(err);
+        console.log("error here2")
       });
   };
+
   const fetchDirectoryMap = () => {
     fetch(`${BACKEND_URL}/stat`)
       .then((response) => {
         return response.json();
       })
       .then((data) => {
+        console.log(data);
         setDirectoryDict(data);
       })
       .catch((err) => {
         alert(err);
+        console.log("error here");
       });
   };
 
@@ -73,7 +80,7 @@ const App = () => {
           })
           .then((data) => {
             setNameStruct(data);
-            setExploredFolders(new Set([...Array.from(exploredFolders), name])); 
+            setExploredFolders(new Set([...Array.from(exploredFolders), name]));
           })
           .catch((err) => {
             alert(err);
@@ -115,8 +122,23 @@ const App = () => {
         </div>
       </Grid>
       <Grid item xs={6}>
-        <div style={{ padding: "2em", height: "100vh" }}>
-          <Paper variant="outlined" sx={{ height: "50vh", padding: 1 }}>
+        <div
+          style={{
+            height: "100vh",
+            width: "100%",
+          }}
+        >
+          <Paper
+            variant="outlined"
+            sx={{
+              height: "50vh",
+              padding: "1em",
+              top: "25%",
+              position: "fixed",
+              width: "100%",
+              boxSizing: "border-box",
+            }}
+          >
             Folder Information
             <DirectoryStats folder={selectedFolder} />
           </Paper>
