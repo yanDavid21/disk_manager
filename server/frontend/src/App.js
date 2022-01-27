@@ -3,7 +3,7 @@ import TreeView from "@mui/lab/TreeView";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import TreeItem from "@mui/lab/TreeItem";
-import { Grid } from "@mui/material";
+import { CircularProgress, Grid, Typography } from "@mui/material";
 import Paper from "@mui/material/Paper";
 
 const BACKEND_URL = "http://localhost:8080/api/data";
@@ -31,7 +31,9 @@ const App = () => {
   const [selectedFolder, setSelectedFolder] = useState(initState); //current selected folder
   const [directoryDict, setDirectoryDict] = useState({}); //dictionary mapping folder name to folder stats
   const [nameStruct, setNameStruct] = useState(null); //nested tree structure representing the relationship between folders (stores folder names)
-  const [exploredFolders, setExploredFolders] = useState(new Set());
+  const [exploredFolders, setExploredFolders] = useState(new Set()); //tracks which folders have been opened aka. its data has been fetched
+  const [loading, setLoading] = useState(true);
+
   const fetchInitData = () => {
     fetch(BACKEND_URL)
       .then((response) => {
@@ -45,24 +47,43 @@ const App = () => {
       })
       .catch((err) => {
         alert(err);
-        console.log("error here2")
+        console.log("error here2");
       });
   };
 
-  const fetchDirectoryMap = () => {
-    fetch(`${BACKEND_URL}/stat`)
-      .then((response) => {
-        return response.json();
-      })
-      .then((data) => {
-        console.log(data);
-        setDirectoryDict(data);
-      })
-      .catch((err) => {
-        alert(err);
-        console.log("error here");
-      });
+  const initSocketConnection = () => {
+    const ws = new WebSocket("ws://localhost:8080");
+    ws.onopen = (event) => {
+      setLoading(true);
+    };
+    ws.onmessage = (event) => {
+      if (event.data === "DATA READY") {
+        fetch(`${BACKEND_URL}/stat`)
+          .then((response) => {
+            return response.json();
+          })
+          .then((data) => {
+            console.log(data);
+            setDirectoryDict(data);
+            setLoading(false);
+          })
+          .catch((err) => {
+            alert(err);
+            console.log("error here");
+          });
+      }
+    };
+    //clean up function
+    return () => ws.close();
   };
+
+  useEffect(fetchInitData, []);
+  useEffect(initSocketConnection, []);
+  useEffect(() => {
+    if (loading === false) {
+      setSelectedFolder(directoryDict[rootDir]);
+    }
+  }, [loading, directoryDict, rootDir]);
 
   const convertStructToTreeItem = (nameStruct, directoryPath) => {
     const { name, subFolders } = nameStruct[directoryPath];
@@ -102,9 +123,6 @@ const App = () => {
     );
   };
 
-  useEffect(fetchInitData, []);
-  useEffect(fetchDirectoryMap, []);
-
   return (
     <Grid container className="App" spacing={2}>
       <Grid item xs={6}>
@@ -139,8 +157,12 @@ const App = () => {
               boxSizing: "border-box",
             }}
           >
-            Folder Information
-            <DirectoryStats folder={selectedFolder} />
+            <Typography variant="h4">Folder Information</Typography>
+            {loading ? (
+              <CircularProgress />
+            ) : (
+              <DirectoryStats folder={selectedFolder} />
+            )}
           </Paper>
         </div>
       </Grid>

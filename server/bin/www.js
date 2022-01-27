@@ -6,6 +6,7 @@ const app = require("../app");
 const debug = require("debug")("disk-manager:server");
 const http = require("http");
 const open = require("open");
+const websocket = require("ws");
 
 const startServer = (nameStruct, initNameTreeDepth, rootDir) => {
   /**
@@ -20,6 +21,8 @@ const startServer = (nameStruct, initNameTreeDepth, rootDir) => {
    */
 
   const server = http.createServer(app);
+
+  const websocketServer = new websocket.Server({ server });
 
   /**
    * Listen on provided port, on all network interfaces.
@@ -90,6 +93,8 @@ const startServer = (nameStruct, initNameTreeDepth, rootDir) => {
     app.locals.initNameTreeDepth = initNameTreeDepth;
     app.locals.rootDir = rootDir;
   }
+
+  return websocketServer;
 };
 
 const updateDirectoryStruct = (directoryStruct) => {

@@ -2,7 +2,11 @@
 const path = require("path");
 const commandLineArgs = require("command-line-args");
 const { existsSync } = require("fs");
-const { startServer, updateDirectoryStruct } = require("./server/bin/www");
+const {
+  startServer,
+  updateDirectoryStruct,
+  websocketServer,
+} = require("./server/bin/www");
 import { ArgV } from "./utils/types";
 import {
   optionDefinitions,
@@ -42,7 +46,7 @@ const accumalatorNameDict = {};
 if (web) {
   getDirectoryNames(pathName, "", initNameTreeDepth, accumalatorNameDict).then(
     () => {
-      startServer(accumalatorNameDict, initNameTreeDepth, pathName);
+      const websocketServer = startServer(accumalatorNameDict, initNameTreeDepth, pathName);
       getStatOfDirectory(
         pathName,
         0,
@@ -52,6 +56,14 @@ if (web) {
         accumalatorDirectoryDict
       ).then(() => {
         updateDirectoryStruct(accumalatorDirectoryDict);
+        //for existing connections
+        websocketServer.clients.forEach((ws) => {
+          ws.send("DATA READY");
+        });
+        //for future connections (refreshes)
+        websocketServer.on("connection", (ws) => {
+          ws.send("DATA READY");
+        })
       });
     }
   );
